@@ -1,0 +1,13 @@
+# 개인 설정값 (작업 폴더 경로, 대회명 등) - 다른 사람에게 노출되면 안 됨
+settings.json
+
+# 화면 좌표 캐시 (본인 모니터 해상도/배치에 맞춰진 개인 값)
+position_cache.json
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+
+# 각종 OS/에디터 임시파일
+.DS_Store
+Thumbs.db
