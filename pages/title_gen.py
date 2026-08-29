@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from theme import BG, PANEL, ACCENT, ACCENT2, TEXT, SIDEBAR_TEXT, MUTED, button_style, combo_style, result_box_style
-from config import BASE_DIR, TITLE_ROUNDS
+from config import BASE_DIR, TITLE_ROUNDS, TOURNA_NAME
 from logic.common import round_label
 from logic.title import build_title_plan, build_prelim_title_plan
 from widgets import TitleEditDialog, ConfirmDialog
@@ -36,9 +36,18 @@ class TitleGenPage(QWidget):
         layout.addWidget(title)
 
         # ── 1. 작업 폴더 표시 (설정 페이지에서 지정한 폴더를 그대로 씀) ──
-        sub = QLabel(f"대상 폴더: {self.work_dir}")
+        sub = QLabel(f"대상 폴더: {self.work_dir}   |   대회명: {TOURNA_NAME} (⚙️ 설정 페이지 기준)")
         sub.setStyleSheet(f"color:{MUTED}; font-size:9pt; background:transparent;")
         layout.addWidget(sub)
+
+        naming_hint = QLabel(
+            "💡 아래 '파일 이름'은 제목 텍스트를 저장해두는 메모용 이름일 뿐이에요. "
+            "실제 생성되는 폴더/파일 이름은 항상 위 대회명(TOURNA_NAME) 기준이라, "
+            "'대진표 만들기'나 '제목/사진 자동 업로드'에서도 똑같이 찾아 쓸 수 있어요."
+        )
+        naming_hint.setWordWrap(True)
+        naming_hint.setStyleSheet(f"color:{MUTED}; font-size:8pt; background:transparent;")
+        layout.addWidget(naming_hint)
 
         # ── 2. 제목 만들기 / 수정 / 파일 선택 ────────────
         make_row = QHBoxLayout()
@@ -229,12 +238,11 @@ class TitleGenPage(QWidget):
             QMessageBox.warning(self, "알림", "시작 라운드를 선택해주세요.")
             return
 
-        contest_name = os.path.splitext(fname)[0]
-        plan = build_title_plan(self.work_dir, contest_name, title_text, start_round)
+        plan = build_title_plan(title_text, start_round)
 
         preview_lines = [
             f"작업 폴더: {self.work_dir}",
-            f"대회명(파일명 기준): {contest_name}",
+            f"대회명: {TOURNA_NAME}  (설정 페이지의 대회명 기준이에요, 방금 고른 파일 이름과는 무관해요)",
             f"제목: {title_text}",
             f"시작 라운드: {round_label_selected}",
             "",

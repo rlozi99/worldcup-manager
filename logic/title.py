@@ -21,15 +21,17 @@ def build_title_lines(title_text, round_num):
         return [f"{title_text} - {round_num}강 {i}조" for i in range(1, group_count + 1)]
 
 
-def build_title_plan(work_dir, contest_name, title_text, start_round):
-    """실제 생성 전에, 어떤 폴더/파일이 만들어질지 계획만 세움
+def build_title_plan(title_text, start_round):
+    """실제 생성 전에, 어떤 폴더/파일이 만들어질지 계획만 세움.
+    폴더/파일 이름은 항상 설정의 대회명(TOURNA_NAME) 기준 - load_titles_for_round가 읽는 위치와
+    정확히 일치해야 대진표 만들기/자동 업로드 등 다른 기능들이 이 제목을 제대로 찾아 쓸 수 있음.
     반환: [(round_num, folder_path, file_path, lines), ...]"""
     target_rounds = [r for r in TITLE_ROUNDS if r <= start_round]
     plan = []
     for round_num in target_rounds:
         lines = build_title_lines(title_text, round_num)
-        folder_path = os.path.join(work_dir, f"{contest_name}_{round_label(round_num)}")
-        file_path = os.path.join(folder_path, f"{contest_name}_title({round_num}).txt")
+        folder_path = get_round_dir(round_num)
+        file_path = os.path.join(folder_path, f"{OUTPUT_FILE_PREFIX}({round_num}).txt")
         plan.append((round_num, folder_path, file_path, lines))
     return plan
 
