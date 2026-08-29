@@ -120,16 +120,17 @@ class VoteCountPage(QWidget):
                 continue
 
             a_count, b_count, others, reply_flags = count_votes_from_file(file_path)
+            diff = abs(a_count - b_count)
 
             if a_count > b_count:
-                winner = f"🏆 승자: [{CANDIDATE_A}]"
+                winner = f"({diff}표 차) 🏆 승자: [{CANDIDATE_A}]"
             elif b_count > a_count:
-                winner = f"🏆 승자: [{CANDIDATE_B}]"
+                winner = f"({diff}표 차) 🏆 승자: [{CANDIDATE_B}]"
             else:
                 winner = "🤝 동점!"
 
             out.append(f"[ {i}조 ]")
-            out.append(f"  ▶ {CANDIDATE_A}: {a_count}표   ▶ {CANDIDATE_B}: {b_count}표   {winner}")
+            out.append(f"  ▶ {CANDIDATE_A}: {a_count}표   ▶ {CANDIDATE_B}: {b_count}표  {winner}")
 
             if others:
                 grouped = {}

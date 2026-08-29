@@ -60,8 +60,10 @@ class TournamentPage(QWidget):
         mode_row.addStretch()
         layout.addLayout(mode_row)
 
-        # ── 라운드 선택 (공통) ──
-        round_row = QHBoxLayout()
+        # ── 라운드 선택 ('새로 만들기' 모드에서만 보임 - 승자입력 모드는 아래 '가져올 라운드'를 씀) ──
+        self.round_row_container = QWidget()
+        round_row = QHBoxLayout(self.round_row_container)
+        round_row.setContentsMargins(0, 0, 0, 0)
         round_lbl = QLabel("생성할 라운드:")
         round_lbl.setStyleSheet(f"color:{TEXT}; background:transparent;")
         round_row.addWidget(round_lbl)
@@ -74,7 +76,13 @@ class TournamentPage(QWidget):
         self.round_combo.currentTextChanged.connect(self.on_round_changed)
         round_row.addWidget(self.round_combo)
         round_row.addStretch()
-        layout.addLayout(round_row)
+        layout.addWidget(self.round_row_container)
+
+        # ── 지금 썸네일/스왑 버튼이 대상으로 삼는 라운드가 어디인지 항상 보여줌
+        #     (새로 만들기 모드: 위 드롭다운 값 / 승자입력 모드: '가져올 라운드'로 계산된 목표 라운드) ──
+        self.effective_round_label = QLabel("")
+        self.effective_round_label.setStyleSheet(f"color:{MUTED}; font-size:9pt; background:transparent;")
+        layout.addWidget(self.effective_round_label)
 
         # ── 썸네일 같이 생성 체크박스 (기본 체크 안 됨) + 나중에 따로 다시 만들기 ──
         thumb_row = QHBoxLayout()
@@ -134,16 +142,40 @@ class TournamentPage(QWidget):
     def current_round(self):
         return self.round_label_to_num[self.round_combo.currentText()]
 
+    def winners_target_round(self):
+        """'가져올 라운드'(소스)로 선택한 값으로부터, 실제로 만들어질 목표 라운드를 계산함.
+        예: 64강을 가져오면 -> 32강이 만들어짐. 4강을 가져오면 -> 2강(결승·3,4위)이 만들어짐."""
+        import_round = self.import_round_label_to_num[self.import_round_combo.currentText()]
+        return import_round // 2
+
+    def effective_round(self):
+        """지금 썸네일/스왑 버튼이 대상으로 삼을 라운드.
+        새로 만들기 모드: 위 '생성할 라운드' 드롭다운 값 / 승자입력 모드: '가져올 라운드'로 계산된 목표 라운드"""
+        if self.stack.currentIndex() == 1:
+            return self.winners_target_round()
+        return self.current_round()
+
+    def update_effective_round_label(self):
+        self.effective_round_label.setText(f"📍 지금 썸네일/수정 버튼이 대상으로 삼는 라운드: {round_label(self.effective_round())}")
+
+    def update_winners_target_hint(self, *_):
+        target = self.winners_target_round()
+        self.winners_target_hint.setText(f"→ {round_label(target)}이 만들어져요")
+        self.update_effective_round_label()
+
     def switch_mode(self, index):
         self.stack.setCurrentIndex(index)
+        self.round_row_container.setVisible(index == 0)  # 승자입력 모드에선 '가져올 라운드'만 보이면 되니 숨김
         self.create_mode_btn.setStyleSheet(button_style(ACCENT if index == 0 else PANEL,
                                                           ACCENT2 if index == 0 else SIDEBAR_TEXT, bold=(index == 0)))
         self.winners_mode_btn.setStyleSheet(button_style(ACCENT if index == 1 else PANEL,
                                                            ACCENT2 if index == 1 else SIDEBAR_TEXT, bold=(index == 1)))
+        self.update_effective_round_label()
 
     def on_round_changed(self, *_):
         if self.stack.currentIndex() == 0:
             self.recompute_default_source()
+        self.update_effective_round_label()
 
     def on_thumbnail_toggle(self, checked):
         self.thumbnail_checkbox.setText("☑️ 썸네일 생성" if checked else "⬜ 썸네일 생성")
@@ -151,7 +183,7 @@ class TournamentPage(QWidget):
     def redo_thumbnails_only(self):
         """대진표(조 편성)는 절대 건드리지 않고, 선택된 라운드의 본선 폴더에서 썸네일만 다시 생성함.
         '썸네일 생성' 체크를 깜빡했을 때 셔플을 다시 안 하고 안전하게 복구할 수 있게 하기 위한 버튼."""
-        round_size = self.current_round()
+        round_size = self.effective_round()
         target_dir = get_bonsun_dir(round_size)
         if not os.path.isdir(target_dir):
             QMessageBox.warning(self, "알림", f"아직 이 라운드의 본선 폴더가 없어요:\n{target_dir}\n\n먼저 대진표를 만들어주세요.")
@@ -162,7 +194,7 @@ class TournamentPage(QWidget):
         self.result_box.setPlainText("\n".join(log))
 
     def open_swap_editor(self):
-        round_size = self.current_round()
+        round_size = self.effective_round()
         open_swap_editor(round_size)
 
     # ------------------------------------------------------------
@@ -288,6 +320,29 @@ class TournamentPage(QWidget):
         desc.setStyleSheet(f"color:{MUTED}; font-size:9pt; background:transparent;")
         v.addWidget(desc)
 
+        # ── '가져올 라운드' - 방금 끝낸(승자를 뽑아올) 라운드를 그대로 고르면 됨.
+        #     ("생성할 라운드"는 목표 라운드라 헷갈린다는 피드백 반영 - 여기선 반대로 소스 라운드를 고름)
+        import_row = QHBoxLayout()
+        import_lbl = QLabel("가져올 라운드:")
+        import_lbl.setStyleSheet(f"color:{TEXT}; background:transparent;")
+        import_row.addWidget(import_lbl)
+
+        # 2강(결승)은 더 아래 라운드가 없어서 '가져올' 대상이 될 수 없으므로 제외
+        self.import_rounds = [r for r in VALID_ROUNDS if r != 2]
+        self.import_round_label_map = {r: round_label(r) for r in self.import_rounds}
+        self.import_round_label_to_num = {v: k for k, v in self.import_round_label_map.items()}
+        self.import_round_combo = QComboBox()
+        self.import_round_combo.addItems([self.import_round_label_map[r] for r in self.import_rounds])
+        self.import_round_combo.setStyleSheet(combo_style())
+        import_row.addWidget(self.import_round_combo)
+
+        self.winners_target_hint = QLabel("")
+        self.winners_target_hint.setStyleSheet(f"color:{MUTED}; font-size:9pt; background:transparent;")
+        import_row.addWidget(self.winners_target_hint, 1)
+        self.import_round_combo.currentTextChanged.connect(self.update_winners_target_hint)
+        v.addLayout(import_row)
+        self.update_winners_target_hint()
+
         load_row = QHBoxLayout()
         load_btn = QPushButton("🔄 불러오기")
         load_btn.setStyleSheet(button_style(PANEL, SIDEBAR_TEXT))
@@ -325,7 +380,7 @@ class TournamentPage(QWidget):
         return panel
 
     def load_matches(self):
-        round_size = self.current_round()
+        round_size = self.winners_target_round()
         prev_round_size, source_dir, matches = load_matches_for_round(round_size)
 
         # 기존 매치 입력줄 지우기
@@ -415,7 +470,7 @@ class TournamentPage(QWidget):
             QMessageBox.warning(self, "알림", f"아직 승자를 선택 안 한 조가 있어요: {', '.join(map(str, not_selected))}조")
             return
 
-        round_size = self.current_round()
+        round_size = self.winners_target_round()
         reply = QMessageBox.question(
             self, "확인",
             f"{len(self.matches)}개 매치의 승자로 {round_label(round_size)} 대진표를 만들게요. 진행할까요?"
@@ -436,3 +491,7 @@ class TournamentPage(QWidget):
             log.extend(generate_thumbnails_for_round(round_size))
 
         self.result_box.setPlainText("\n".join(log))
+
+        # 방금 만든 라운드를 상단 '생성할 라운드'에도 반영 -> 썸네일/스왑 버튼이 바로 이 라운드를 가리키게 됨
+        if round_size in self.round_label_map:
+            self.round_combo.setCurrentText(self.round_label_map[round_size])
