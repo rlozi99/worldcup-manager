@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from theme import BG, PANEL, ACCENT, TEXT, SIDEBAR_TEXT, MUTED, button_style, combo_style, result_box_style
-from config import CANDIDATE_A, CANDIDATE_B, get_vote_base_dir
+from config import CANDIDATE_A, CANDIDATE_B, LABEL_A, LABEL_B, get_vote_base_dir
 from logic.vote_count import count_votes_from_file
 from app_state import _floating_windows
 
@@ -123,9 +123,9 @@ class VoteCountPage(QWidget):
             diff = abs(a_count - b_count)
 
             if a_count > b_count:
-                winner = f"({diff}표 차) 🏆 승자: [{CANDIDATE_A}]"
+                winner = f"({diff}표 차) 🏆 승자: [{CANDIDATE_A}] --------------> {LABEL_A[0]}"
             elif b_count > a_count:
-                winner = f"({diff}표 차) 🏆 승자: [{CANDIDATE_B}]"
+                winner = f"({diff}표 차) 🏆 승자: [{CANDIDATE_B}] --------------> {LABEL_B[0]}"
             else:
                 winner = "🤝 동점!"
 
