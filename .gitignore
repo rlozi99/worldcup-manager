@@ -11,3 +11,11 @@ __pycache__/
 # 각종 OS/에디터 임시파일
 .DS_Store
 Thumbs.db
+
+# 개인용 exe 빌드 메모 (깃허브엔 안 올림)
+BUILD_EXE.md
+
+# PyInstaller 빌드 산출물
+build/
+dist/
+*.spec

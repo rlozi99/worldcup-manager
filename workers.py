@@ -77,8 +77,13 @@ class UploadWorker(QThread):
 
                 paths_a, paths_b = find_group_images(self.round_num, i)
                 if paths_a and paths_b:
-                    upload_order = [title_img_a] + paths_a + [title_img_b] + paths_b
-                    upload_paths_recursive(upload_order, upload_button_pos, filename_field_pos)
+                    # 한 사람씩 따로 업로드하고, 두 사람 사이에 엔터 2번(빈 줄 하나)을 넣어서
+                    # 게시글 본문에서 두 후보 사진 묶음이 확실히 구분되도록 함.
+                    upload_paths_recursive([title_img_a] + paths_a, upload_button_pos, filename_field_pos)
+                    pyautogui.press("enter")
+                    pyautogui.press("enter")
+                    time.sleep(0.2)
+                    upload_paths_recursive([title_img_b] + paths_b, upload_button_pos, filename_field_pos)
                 else:
                     self.log_signal.emit(f"   ⚠️ {i}조 이미지 파일을 못 찾았어요. 이미지 업로드는 건너뜁니다.")
 
