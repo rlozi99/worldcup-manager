@@ -19,3 +19,7 @@ BUILD_EXE.md
 build/
 dist/
 *.spec
+
+# 개인용 실행 런처 (배포용 아님, 로컬 개발 편의용)
+run.bat
+run_auto_close.bat

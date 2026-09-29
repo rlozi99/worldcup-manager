@@ -254,20 +254,35 @@ def find_group_images(round_num, group_num):
     return paths_a, paths_b
 
 
+TITLE_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+
+
 def find_title_images():
-    """대회 최상위 폴더(BASE_DIR)에서 후보 이름이 들어간 타이틀 이미지 2개를 찾음"""
-    file_a = file_b = None
-    if os.path.exists(BASE_DIR):
-        for f in os.listdir(BASE_DIR):
-            if not os.path.isfile(os.path.join(BASE_DIR, f)):
+    """대회 최상위 폴더(BASE_DIR)에서 후보 이름이 들어간 타이틀 이미지 2개를 찾음.
+    - 이미지 파일만 대상 (예: '취랄드컵제목.txt' 같은 텍스트 파일은 제외)
+    - 파일 이름(확장자 제외)이 후보 이름과 똑같은 파일을 최우선으로 씀 (예: '취.png')
+    - 그런 파일이 없을 때만 '후보 이름이 들어간' 이미지로 대체. 이때 대회명처럼
+      두 후보 이름이 다 들어간 파일(예: '취랄드컵.png')은 헷갈리니까 제외."""
+    def pick(candidate, other):
+        exact = partial = None
+        if not candidate or not os.path.exists(BASE_DIR):
+            return None
+        for f in sorted(os.listdir(BASE_DIR)):
+            full = os.path.join(BASE_DIR, f)
+            if not os.path.isfile(full):
                 continue
-            if CANDIDATE_A in f:
-                file_a = f
-            elif CANDIDATE_B in f:
-                file_b = f
-    path_a = os.path.join(BASE_DIR, file_a) if file_a else None
-    path_b = os.path.join(BASE_DIR, file_b) if file_b else None
-    return path_a, path_b
+            stem, ext = os.path.splitext(f)
+            if ext.lower() not in TITLE_IMAGE_EXTS:
+                continue
+            if stem == candidate:
+                exact = f
+                break
+            if candidate in stem and (not other or other not in stem) and partial is None:
+                partial = f
+        chosen = exact or partial
+        return os.path.join(BASE_DIR, chosen) if chosen else None
+
+    return pick(CANDIDATE_A, CANDIDATE_B), pick(CANDIDATE_B, CANDIDATE_A)
 
 
 def generate_thumbnails_for_round(round_size):
